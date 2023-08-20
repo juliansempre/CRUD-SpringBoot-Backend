@@ -1,69 +1,69 @@
 package com.example.crud.controller;
 
 import com.example.crud.model.ProductModel;
-import com.example.crud.model.ProductRepository;
+import com.example.crud.repository.ProductRepository;
 import com.example.crud.model.RequestProduct;
+import com.example.crud.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.*;
 import java.util.Optional;
-
-//RequestMapping indica qual endpoint esse controler é responsagel
-//ResponseEntity gerar respostas
-//Migrations executa e é um registro historico do banco de dados
-/*
-Para criar uma migration basta criar um arquivo SQL dentro de:
-projeto/main/resources/db/migration
-O nome do arquivo deve respeitar a seguinte sintaxe:
-VX__metodo-nome-tabela
-V1__create-table-product.sql
-`V3__update-table-foods`
-`V9__create-table-user`
-`V11__drop-table-user`
-
-flyway_schema_history impede a redundancia na criação de comandos já executados
-//O preço é em centavos para o front formatar para float.
-@Autowired é injeção de dependencia Classe objeto = new Classe();
-return ResponseEntity.ok().build(); para responseEntity vazio
-POST
-{
-    "name": "Camiseta",
-    "price_in_cents": 2000
-}
-Se por string assim: return ResponseEntity.ok("Deu ok, funcionando! "+allProduct);
-o json não aparece, gera um toString padrão por causa da concatenação string.
-
-PathVariable receber id na URL
-    @PutMapping("/{id}")
-    public ResponseEntity updateProduct(@PathVariable String id, @RequestBody @Valid RequestProduct data){
- */
 
 @RestController
 @RequestMapping("/product")
 public class ProductController {
-    //Instanciar
+    private final ProductService productService;
+
     @Autowired
-    private ProductRepository repository;
-    //Listar
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
     @GetMapping
-    public ResponseEntity getAllProducts(){
-        var allProduct = repository.findAll();
+    public ResponseEntity getAllProducts() {
+        var allProduct = productService.getAllProducts();
         return ResponseEntity.ok(allProduct);
     }
-    //Inserir
+
+    @GetMapping("/{id}")
+    public ResponseEntity getProductById(@PathVariable String id) {
+        Optional<ProductModel> optionalProduct = productService.getProductById(id);
+
+        if (optionalProduct.isPresent()) {
+            return ResponseEntity.ok(optionalProduct.get());
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping
-    public ResponseEntity registerProduct(@RequestBody @Valid RequestProduct data){
-        ProductModel productModel = new ProductModel(data);
-        repository.save(productModel);
+    public ResponseEntity registerProduct(@RequestBody @Valid RequestProduct data) {
+        productService.registerProduct(data);
         return ResponseEntity.ok().build();
     }
-    @PutMapping
-    public ResponseEntity updateProduct(@RequestBody @Valid RequestProduct data){
-        Optional<ProductModel> productModel = Optional.of(repository.getReferenceById(data.id()));
-        return ResponseEntity.ok(productModel);
+
+    @PutMapping("/{id}")
+    public ResponseEntity updateProduct(@PathVariable String id, @RequestBody @Valid RequestProduct data) {
+        boolean updated = productService.updateProduct(id, data);
+
+        if (updated) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity deleteProduct(@PathVariable String id) {
+        boolean deleted = productService.deleteProduct(id);
+
+        if (deleted) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
+
